@@ -4437,7 +4437,7 @@
   // ====================================================================
   var AREE15_COLORE = "#1D4ED8";
   var aree15 = { lista: [], strato: L.layerGroup().addTo(map) };
-  var aree15Renderer = canvasSoftware({ pane: "q15Pane", padding: 0.1 });
+  var aree15Renderer = L.canvas({ pane: "q15Pane", padding: 0.1 });
   function aree15Mostra() {
     document.body.classList.toggle("aree15-on", aree15.lista.length > 0);
   }
