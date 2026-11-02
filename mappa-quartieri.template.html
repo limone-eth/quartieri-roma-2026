@@ -1101,10 +1101,10 @@
     box-shadow: var(--shadow); padding: 12px 14px 10px;
   }
   #densita[hidden] { display: none; }
-  body.q15-on .leaflet-densita-pane canvas { opacity: 0.55; }
+  body.q15-on .leaflet-densita-pane img { opacity: 0.55 !important; }
   /* Solo colori: via icone, etichette e velo, che coprono e sporcano la mappa di calore. */
   .leaflet-servizi-pane, .leaflet-ingressoVelo-pane, .area-label { transition: opacity 160ms ease-out, visibility 160ms; }
-  .leaflet-densita-pane canvas { transition: opacity 200ms ease-out; }
+  .leaflet-densita-pane img { transition: opacity 200ms ease-out; }
   body.den-on.den-solo .leaflet-servizi-pane,
   body.den-on.den-solo .leaflet-ingressoVelo-pane,
   body.den-on.den-solo .area-label { opacity: 0; visibility: hidden; }
@@ -4518,13 +4518,46 @@
   map.createPane("densitaPane");
   map.getPane("densitaPane").style.zIndex = 401;
   map.getPane("densitaPane").style.pointerEvents = "none";
-  var denRenderer = canvasSoftware({ pane: "densitaPane", padding: 0.1 });
 
   function denColore(k, n) { return DEN_COLORI[n > 1 ? Math.round(k * (DEN_COLORI.length - 1) / (n - 1)) : 0]; }
   function denClasse(c) {
     var k = 0;
     while (k + 1 < den.dati.classi.length && c >= den.dati.classi[k + 1]) k++;
     return k;
+  }
+  // Gli esagoni si disegnano una volta sola in un'immagine fissa: un canvas vivo sopra la mappa
+  // rompeva la composizione di Chrome (schede senza sfondo, blocchi vuoti). Il disegno usa la
+  // proiezione della mappa, cosi' l'immagine resta allineata a ogni zoom.
+  function denImmagine(anelli, n) {
+    var crs = L.CRS.EPSG3857, sud = 90, ovest = 180, nord = -90, est = -180;
+    anelli.forEach(function (a) {
+      a.forEach(function (es) {
+        es[0].forEach(function (p) {
+          if (p[0] < sud) sud = p[0]; if (p[0] > nord) nord = p[0];
+          if (p[1] < ovest) ovest = p[1]; if (p[1] > est) est = p[1];
+        });
+      });
+    });
+    var so = crs.project(L.latLng(sud, ovest)), ne = crs.project(L.latLng(nord, est));
+    var larghezza = 4096, k = larghezza / (ne.x - so.x);
+    var tela = document.createElement("canvas");
+    tela.width = larghezza;
+    tela.height = Math.ceil((ne.y - so.y) * k);
+    var ctx = tela.getContext("2d");
+    ctx.globalAlpha = 0.58;
+    anelli.forEach(function (a, c) {
+      ctx.fillStyle = denColore(c, n);
+      ctx.beginPath();
+      a.forEach(function (es) {
+        es[0].forEach(function (p, i) {
+          var q = crs.project(L.latLng(p[0], p[1])), x = (q.x - so.x) * k, y = (ne.y - q.y) * k;
+          if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+        });
+        ctx.closePath();
+      });
+      ctx.fill();
+    });
+    return L.imageOverlay(tela.toDataURL("image/png"), [[sud, ovest], [nord, est]], { pane: "densitaPane", interactive: false });
   }
   function denCarica() {
     if (!VERSIONI.densita || VERSIONI.copertura) return;
@@ -4538,9 +4571,7 @@
         den.idx.set(d.celle[i] + "," + d.celle[i + 1], d.celle[i + 3]);
         anelli[denClasse(d.celle[i + 3])].push([esagonoAnello(d.esagono, d.celle[i], d.celle[i + 1])]);
       }
-      den.strato = L.layerGroup(anelli.map(function (a, k) {
-        return L.polygon(a, { renderer: denRenderer, pane: "densitaPane", stroke: false, fillColor: denColore(k, n), fillOpacity: 0.58, interactive: false });
-      }));
+      den.strato = denImmagine(anelli, n);
       document.getElementById("den-scala").innerHTML = d.classi.map(function (lim, k) {
         return '<span class="den-classe"><i style="background:' + denColore(k, n) + '"></i>' + formattaNumero(lim) + (k === n - 1 ? "+" : "") + "</span>";
       }).join("");
