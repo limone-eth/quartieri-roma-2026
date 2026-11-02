@@ -88,7 +88,7 @@ pip install numpy scipy tifffile
 python3 prepara_densita_15_minuti.py
 ```
 
-Un clic su un servizio, in 2D, mostra l'area che si raggiunge a piedi in 15 minuti da lì, sulle strade vere. Un altro servizio la sostituisce e la chiusura della scheda la toglie. Le icone compaiono aprendo un'area o un municipio. Con la modalità "A piedi in 15 minuti" accesa il clic apre solo la scheda e la mappa di calore resta sotto, più leggera, con le strade raggiungibili in blu.
+Un clic su un servizio, in 2D, mostra l'area che si raggiunge a piedi in 15 minuti da lì, sulle strade vere. Un altro servizio la sostituisce e la chiusura della scheda la toglie. Le icone compaiono aprendo un'area o un municipio. Con la modalità "A piedi in 15 minuti" accesa il clic apre solo la scheda e la mappa di calore resta sotto, con le strade raggiungibili in blu. Con un servizio o un punto scelto la legenda si riduce alla scala dei colori.
 
 Lo strato della copertura qui sotto è spento nel rilascio del 2026-11-02: `COPERTURA_NEL_RILASCIO = False` in `build.py`, e la 2D esce come senza il file (niente esagoni, legenda né fonte GHS-POP). Il codice resta; con `True` torna tutto.
 
